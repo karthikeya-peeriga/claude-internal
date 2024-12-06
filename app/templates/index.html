@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Submission Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        :root {
+            --beige-lightest: #F5F0E1;
+            --beige-light: #E6D4B8;
+            --beige-medium: #D4B483;
+            --black-dark: #121212;
+            --black-medium: #1E1E1E;
+            --black-light: #2C2C2C;
+        }
+        body {
+            background-color: var(--beige-lightest);
+            font-family: 'Arial', sans-serif;
+            color: var(--black-dark);
+        }
+        .form-container {
+            background-color: var(--beige-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-top: 30px;
+            border: 2px solid var(--black-medium);
+        }
+        .product-section {
+            background-color: var(--beige-medium);
+            border: 1px solid var(--black-light);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .product-section:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .btn-add-product {
+            background-color: var(--black-medium);
+            color: var(--beige-lightest);
+            border: none;
+        }
+        .btn-add-product:hover {
+            background-color: var(--black-dark);
+        }
+        .form-control {
+            background-color: var(--beige-lightest);
+            border: 1px solid var(--black-light);
+            color: var(--black-dark);
+        }
+        .form-control:focus {
+            background-color: var(--beige-light);
+            border-color: var(--black-dark);
+            box-shadow: 0 0 0 0.25rem rgba(18, 18, 18, 0.25);
+        }
+        .form-label {
+            font-weight: 600;
+            color: var(--black-dark);
+        }
+        h1, h5 {
+            color: var(--black-dark);
+            font-weight: bold;
+        }
+        .btn-bulk-listings {
+            background-color: var(--black-light);
+            color: var(--beige-lightest);
+            border: none;
+            margin-left: 10px;
+        }
+        .btn-bulk-listings:hover {
+            background-color: var(--black-dark);
+        }
+        .btn-primary {
+            background-color: var(--black-medium);
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: var(--black-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1 class="mb-4 text-center">Product Submission Form</h1>
+            <form action="/submit_products" method="POST" id="productForm">
+                <div id="productContainer">
+                    <div class="product-section card mb-3 p-3">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Brand Name</label>
+                                <input type="text" class="form-control" name="brand_name[]" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Category</label>
+                                <input type="text" class="form-control" name="category[]" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sub Category</label>
+                                <input type="text" class="form-control" name="sub_category[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Brief Product Description</label>
+                                <input type="text" class="form-control" name="brief_product_description[]" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">EAN Number</label>
+                                <input type="text" class="form-control" name="ean_number[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Model Number</label>
+                                <input type="text" class="form-control" name="model_number[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Color</label>
+                                <input type="text" class="form-control" name="color[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Material</label>
+                                <input type="text" class="form-control" name="material[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Size</label>
+                                <input type="text" class="form-control" name="size[]">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Keywords (comma-separated)</label>
+                                <input type="text" class="form-control" name="keywords[]">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <h5 class="text-secondary">Key Attributes</h5>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <input type="text" class="form-control" name="key_attribute_1[]" placeholder="Key Attribute 1">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <input type="text" class="form-control" name="key_attribute_2[]" placeholder="Key Attribute 2">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <input type="text" class="form-control" name="key_attribute_3[]" placeholder="Key Attribute 3">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <input type="text" class="form-control" name="key_attribute_4[]" placeholder="Key Attribute 4">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <input type="text" class="form-control" name="key_attribute_5[]" placeholder="Key Attribute 5">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="button" class="btn btn-add-product" onclick="addProduct()">Add Another Product</button>
+                    <button type="button" class="btn btn-bulk-listings">Bulk Listings</button>
+                    <button type="submit" class="btn btn-primary ms-2">Submit Products</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function addProduct() {
+            const container = document.getElementById('productContainer');
+            const newSection = container.querySelector('.product-section').cloneNode(true);
+            
+            // Clear input values in the new section
+            newSection.querySelectorAll('input').forEach(input => {
+                input.value = '';
+            });
+            
+            container.appendChild(newSection);
+        }
+
+        // Basic modal for Bulk Listings (you'd replace this with actual functionality)
+        document.querySelector('.btn-bulk-listings').addEventListener('click', function() {
+            alert('Bulk Listings functionality to be implemented');
+        });
+    </script>
+</body>
+</html>

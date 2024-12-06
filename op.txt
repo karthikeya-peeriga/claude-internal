@@ -1,0 +1,3 @@
+ Category, Sub Category, Brand name, Model no, Title ,etc
+
+ Bullets in seperate columns, 
