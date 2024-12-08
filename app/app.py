@@ -173,69 +173,59 @@ def bulk_upload():
                 "error": f"Missing required columns: {', '.join(missing_columns)}"
             }), 400
         
-        # Prepare lists for form submission
-        brand_names = df['Brand Name'].tolist()
-        categories = df['Category'].tolist()
-        sub_categories = df.get('Sub-Category', [''] * len(df)).tolist()
-        descriptions = df['Brief Product Description'].tolist()
-        ean_numbers = df.get('EAN Number', [''] * len(df)).tolist()
-        model_numbers = df['Model Number'].tolist()
-        colors = df['Color'].tolist()
-        materials = df['Material'].tolist()
-        sizes = df.get('Size (If applicable)', [''] * len(df)).tolist()
-        keywords = df.get('Keywords', [''] * len(df)).tolist()
-        
-        # Prepare key attributes (if exists in CSV)
-        key_attributes = {}
+        # Simulate form-like data for submit_products route
+        form_data = {
+            'brand_name[]': df['Brand Name'].tolist(),
+            'category[]': df['Category'].tolist(),
+            'sub_category[]': df.get('Sub-Category', [''] * len(df)).tolist(),
+            'brief_product_description[]': df['Brief Product Description'].tolist(),
+            'ean_number[]': df.get('EAN Number', [''] * len(df)).tolist(),
+            'model_number[]': df['Model Number'].tolist(),
+            'color[]': df['Color'].tolist(),
+            'material[]': df['Material'].tolist(),
+            'size[]': df.get('Size (If applicable)', [''] * len(df)).tolist(),
+            'keywords[]': df.get('Keywords', [''] * len(df)).tolist()
+        }
+
+        # Add key attributes dynamically
         for i in range(1, 6):
             col_name = f'Key Attribute {i}'
             if col_name in df.columns:
-                key_attributes[f'key_attribute_{i}[]'] = df[col_name].tolist()
+                form_data[f'key_attribute_{i}[]'] = df[col_name].tolist()
             else:
-                key_attributes[f'key_attribute_{i}[]'] = [''] * len(df)
-        
-        # Create a new form-like request context
-        bulk_form_data = {
-            'brand_name[]': brand_names,
-            'category[]': categories,
-            'sub_category[]': sub_categories,
-            'brief_product_description[]': descriptions,
-            'ean_number[]': ean_numbers,
-            'model_number[]': model_numbers,
-            'color[]': colors,
-            'material[]': materials,
-            'size[]': sizes,
-            'keywords[]': keywords,
-            **key_attributes
-        }
-        
-        # Override the request form data
-        request.form = bulk_form_data
-        
-        # Call the existing submit_products route
-        return submit_products()
-    
+                form_data[f'key_attribute_{i}[]'] = [''] * len(df)
+
+        # Call submit_products with simulate data
+        return submit_products(form_data)
+
     except Exception as e:
         return jsonify({
             "status": "error", 
             "message": str(e)
         }), 500
 
-
 @app.route('/submit_products', methods=['POST'])
-def submit_products():
+def submit_products(form_data=None):
     try:
+        # Use the passed form_data if available, otherwise use request.form
+        form = form_data if form_data is not None else request.form
+
+        # Helper function to safely get list or single value
+        def safe_get_list(key, default=None):
+            value = form.get(key, default)
+            return value if isinstance(value, list) else [value] if value else default or []
+
         # Get form data
-        brand_names = request.form.getlist('brand_name[]')
-        categories = request.form.getlist('category[]')
-        sub_categories = request.form.getlist('sub_category[]')
-        descriptions = request.form.getlist('brief_product_description[]')
-        ean_numbers = request.form.getlist('ean_number[]')
-        model_numbers = request.form.getlist('model_number[]')
-        colors = request.form.getlist('color[]')
-        materials = request.form.getlist('material[]')
-        sizes = request.form.getlist('size[]')
-        keywords = request.form.getlist('keywords[]')
+        brand_names = safe_get_list('brand_name[]')
+        categories = safe_get_list('category[]')
+        sub_categories = safe_get_list('sub_category[]')
+        descriptions = safe_get_list('brief_product_description[]')
+        ean_numbers = safe_get_list('ean_number[]')
+        model_numbers = safe_get_list('model_number[]')
+        colors = safe_get_list('color[]')
+        materials = safe_get_list('material[]')
+        sizes = safe_get_list('size[]')
+        keywords = safe_get_list('keywords[]')
 
         # Prepare product list and Claude API responses
         products = []
@@ -245,7 +235,8 @@ def submit_products():
             # Prepare key attributes
             key_attributes = []
             for j in range(1, 6):
-                attr_value = request.form.get(f'key_attribute_{j}[]', '')[i] if i < len(request.form.get(f'key_attribute_{j}[]', '')) else ''
+                attr_key = f'key_attribute_{j}[]'
+                attr_value = safe_get_list(attr_key)[i] if i < len(safe_get_list(attr_key)) else ''
                 if attr_value:
                     key_attributes.append(attr_value)
 
