@@ -1,8 +1,11 @@
 import os
 import json
+import csv
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template
+from io import StringIO
+from flask import Flask, request, jsonify, render_template, send_file, Response
 import anthropic
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -18,6 +21,206 @@ client = anthropic.Anthropic(
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
+
+@app.route('/download_input_template')
+def download_input_template():
+    # Create a string buffer to write CSV
+    si = StringIO()
+    cw = csv.writer(si)
+    
+    # Define the headers
+    headers = [
+        'Brand Name', 'Category', 'Sub-Category', 
+        'Brief Product Description', 'EAN Number', 
+        'Model Number', 'Color', 'Material', 
+        'Size (If applicable)', 'Key Attribute 1', 
+        'Key Attribute 2', 'Key Attribute 3', 
+        'Key Attribute 4', 'Key Attribute 5', 
+        'Keywords'
+    ]
+    
+    # Write headers
+    cw.writerow(headers)
+    
+    # Optional: Add a sample row to guide users
+    sample_row = [
+        'Example Brand', 'Electronics', 'Smartphones', 
+        'Powerful Smartphone with Advanced Features', 
+        '1234567890', 'ModelXYZ', 'Black', 'Aluminum', 
+        '6.1 inch', 'High-Resolution Camera', 
+        '5G Enabled', 'Long Battery Life', 
+        'Water Resistant', 'Wireless Charging', 
+        'smartphone,mobile,tech'
+    ]
+    cw.writerow(sample_row)
+    
+    # Prepare the response
+    return Response(
+        si.getvalue(),
+        mimetype='text/csv',
+        headers={
+            "Content-disposition": "attachment; filename=product_input_template.csv"
+        }
+    )
+
+@app.route('/download_file/<filename>')
+def download_file(filename):
+    try:
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        return send_file(filepath, as_attachment=True)
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": str(e)
+        }), 500
+
+@app.route('/download_claude_csv')
+def download_claude_csv():
+    # Get the filename passed in the query parameter
+    responses_filename = request.args.get('filename')
+    
+    if not responses_filename:
+        return jsonify({"error": "No filename provided"}), 400
+    
+    # Full path to the responses file
+    filepath = os.path.join(UPLOAD_FOLDER, responses_filename)
+    
+    try:
+        # Read the JSON file
+        with open(filepath, 'r') as f:
+            claude_responses = json.load(f)
+        
+        # Create a CSV string in memory
+        output = []
+        
+        # Prepare CSV headers
+        headers = [
+            'Category', 'Sub Category', 'Brand Name', 'Model Number', 
+            'Title', 'Description', 'Bullet 1', 'Bullet 2', 'Bullet 3', 
+            'Bullet 4', 'Bullet 5'
+        ]
+        
+        # Process each response
+        for response in claude_responses:
+            # Ensure we have a valid claude_output
+            if not isinstance(response.get('claude_output'), dict):
+                continue
+            
+            # Prepare bullets (pad with empty strings if fewer than 5)
+            bullets = response['claude_output'].get('bullets', []) + [''] * 5
+            bullets = bullets[:5]  # Ensure only 5 bullets
+            
+            # Create a row
+            row = [
+                response['product']['category'],
+                response['product']['sub_category'],
+                response['product']['brand_name'],
+                response['product']['model_number'],
+                response['claude_output'].get('title', ''),
+                response['claude_output'].get('description', ''),
+                *bullets  # Unpack the first 5 bullets
+            ]
+            
+            output.append(row)
+        
+        # Create a string buffer to write CSV
+        si = StringIO()
+        cw = csv.writer(si)
+        
+        # Write headers and rows
+        cw.writerow(headers)
+        cw.writerows(output)
+        
+        # Prepare the response
+        return Response(
+            si.getvalue(),
+            mimetype='text/csv',
+            headers={
+                "Content-disposition": f"attachment; filename={responses_filename.replace('.json', '.csv')}"
+            }
+        )
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/bulk_upload', methods=['POST'])
+def bulk_upload():
+    try:
+        # Check if file is present
+        if 'csvFile' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+        
+        file = request.files['csvFile']
+        
+        # Check if filename is empty
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+        
+        # Read the CSV file
+        # Use pandas to read the CSV file for more robust parsing
+        df = pd.read_csv(file)
+        
+        # Validate required columns
+        required_columns = [
+            'Brand Name', 'Category', 'Brief Product Description', 
+            'Model Number', 'Color', 'Material'
+        ]
+        
+        # Check if all required columns exist
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            return jsonify({
+                "error": f"Missing required columns: {', '.join(missing_columns)}"
+            }), 400
+        
+        # Prepare lists for form submission
+        brand_names = df['Brand Name'].tolist()
+        categories = df['Category'].tolist()
+        sub_categories = df.get('Sub-Category', [''] * len(df)).tolist()
+        descriptions = df['Brief Product Description'].tolist()
+        ean_numbers = df.get('EAN Number', [''] * len(df)).tolist()
+        model_numbers = df['Model Number'].tolist()
+        colors = df['Color'].tolist()
+        materials = df['Material'].tolist()
+        sizes = df.get('Size (If applicable)', [''] * len(df)).tolist()
+        keywords = df.get('Keywords', [''] * len(df)).tolist()
+        
+        # Prepare key attributes (if exists in CSV)
+        key_attributes = {}
+        for i in range(1, 6):
+            col_name = f'Key Attribute {i}'
+            if col_name in df.columns:
+                key_attributes[f'key_attribute_{i}[]'] = df[col_name].tolist()
+            else:
+                key_attributes[f'key_attribute_{i}[]'] = [''] * len(df)
+        
+        # Create a new form-like request context
+        bulk_form_data = {
+            'brand_name[]': brand_names,
+            'category[]': categories,
+            'sub_category[]': sub_categories,
+            'brief_product_description[]': descriptions,
+            'ean_number[]': ean_numbers,
+            'model_number[]': model_numbers,
+            'color[]': colors,
+            'material[]': materials,
+            'size[]': sizes,
+            'keywords[]': keywords,
+            **key_attributes
+        }
+        
+        # Override the request form data
+        request.form = bulk_form_data
+        
+        # Call the existing submit_products route
+        return submit_products()
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": str(e)
+        }), 500
+
 
 @app.route('/submit_products', methods=['POST'])
 def submit_products():
@@ -88,7 +291,7 @@ Key Features:
 
 Keywords: {keywords[i]}
 
-[Rest of the previous prompt content remains the same...]
+Create a compelling, SEO-optimized product listing that highlights unique features and benefits.
 '''
             
             # Make Claude API call
@@ -146,14 +349,24 @@ Keywords: {keywords[i]}
 
         # Generate unique filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = os.path.join(UPLOAD_FOLDER, f'products_{timestamp}.json')
+        products_filename = f'products_{timestamp}.json'
+        responses_filename = f'claude_responses_{timestamp}.json'
 
-        # Write to JSON file
-        with open(filename, 'w') as f:
+        # Write product data to JSON file
+        products_filepath = os.path.join(UPLOAD_FOLDER, products_filename)
+        with open(products_filepath, 'w') as f:
             json.dump(products, f, indent=4)
 
-        # Render results page with Claude API responses
-        return render_template('results.html', responses=claude_responses)
+        # Write Claude responses to JSON file
+        responses_filepath = os.path.join(UPLOAD_FOLDER, responses_filename)
+        with open(responses_filepath, 'w') as f:
+            json.dump(claude_responses, f, indent=4)
+
+        # Render results page with Claude API responses and filenames
+        return render_template('results.html', 
+                               responses=claude_responses, 
+                               products_filename=products_filename,
+                               responses_filename=responses_filename)
 
     except Exception as e:
         return jsonify({

@@ -83,6 +83,27 @@
     </style>
 </head>
 <body>
+    <div class="modal fade" id="bulkUploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Product Upload</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bulkUploadForm" action="/bulk_upload" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="csvFile" class="form-label">Upload CSV File</label>
+                            <input class="form-control" type="file" id="csvFile" name="csvFile" accept=".csv" required>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Upload and Process</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <div class="form-container">
             <h1 class="mb-4 text-center">Product Submission Form</h1>
@@ -155,13 +176,14 @@
                 </div>
                 <div class="text-center">
                     <button type="button" class="btn btn-add-product" onclick="addProduct()">Add Another Product</button>
-                    <button type="button" class="btn btn-bulk-listings">Bulk Listings</button>
+                    <button type="button" class="btn btn-bulk-listings" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">Bulk Listings</button>
                     <button type="submit" class="btn btn-primary ms-2">Submit Products</button>
-                </div>
+                    <button type="button" class="btn btn-primary ms-2" onclick="window.location.href='{{ url_for('download_input_template') }}'">Download Input Template</button>                </div>
             </form>
         </div>
     </div>
 
+   
     <script>
         function addProduct() {
             const container = document.getElementById('productContainer');

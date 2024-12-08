@@ -59,6 +59,7 @@
             background-color: var(--black-medium);
             color: var(--beige-lightest);
             border: none;
+            margin-right: 10px;
         }
         .btn-secondary:hover {
             background-color: var(--black-dark);
@@ -72,12 +73,12 @@
         {% for response in responses %}
         <div class="result-card card p-3">
             <div class="card-header">
-                <h4>{{ response.product.brand_name }} - {{ response.product.brief_product_description }}</h4>
+                <h4>{{ response.product.brand_name }} - {{ response.product.description }}</h4>
             </div>
             <div class="card-body">
-                {% if 'Error' in response.claude_output %}
+                {% if 'error' in response.claude_output %}
                     <div class="alert alert-danger">
-                        <strong>API Error:</strong> {{ response.claude_output }}
+                        <strong>API Error:</strong> {{ response.claude_output.error }}
                     </div>
                 {% else %}
                     <div class="mb-3">
@@ -103,7 +104,9 @@
         
         <div class="text-center mt-4">
             <a href="/" class="btn btn-secondary">Submit More Products</a>
-            <a href="/" class="btn btn-secondary">Download</a>
+            <a href="{{ url_for('download_file', filename=products_filename) }}" class="btn btn-secondary">Download Product Data</a>
+            <a href="{{ url_for('download_file', filename=responses_filename) }}" class="btn btn-secondary">Download Claude Responses</a>
+            <a href="{{ url_for('download_claude_csv', filename=responses_filename) }}" class="btn btn-secondary">Download CSV</a>
         </div>
         
     </div>
