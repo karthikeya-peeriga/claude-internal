@@ -366,4 +366,4 @@ Create a compelling, SEO-optimized product listing that highlights unique featur
         }), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
